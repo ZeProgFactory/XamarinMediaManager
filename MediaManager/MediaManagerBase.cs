@@ -30,7 +30,7 @@ namespace MediaManager
         }
 
         public TimeSpan StepSize { get; set; } = TimeSpan.FromSeconds(10);
-        
+
         public bool IsInitialized { get; protected set; }
 
         public abstract IMediaPlayer MediaPlayer { get; set; }
@@ -188,7 +188,7 @@ namespace MediaManager
             {
                 OnPlayingChanged(this, new PlayingChangedEventArgs(Position, Duration));
             }
-            if(this.IsBuffering())
+            if (this.IsBuffering())
             {
                 OnBufferingChanged(this, new BufferingChangedEventArgs(Buffered));
             }

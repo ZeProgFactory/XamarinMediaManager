@@ -15,7 +15,25 @@ namespace MediaManager
 {
     public class MediaManagerImplementation : MediaManagerBase<WindowsMediaPlayer, MediaPlayer>
     {
-        public override IMediaPlayer MediaPlayer { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        private IMediaPlayer _mediaPlayer;
+        public override IMediaPlayer MediaPlayer
+        {
+            get
+            {
+                //ToDo: ME ? Matijn ? WindowsMediaPlayer != MediaPlayer
+                if (_mediaPlayer == null)
+                {
+                    _mediaPlayer = new WindowsMediaPlayer();
+                };
+
+                return _mediaPlayer;
+            }
+            set
+            {
+                _mediaPlayer = value;
+            }
+        }
+
         public override IMediaExtractor MediaExtractor { get => _MediaExtractor; set => _MediaExtractor = value; }
         public override IVolumeManager VolumeManager { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -56,11 +74,51 @@ namespace MediaManager
 
         public override TimeSpan Duration => _player.PlaybackSession.NaturalDuration;
 
-        public override TimeSpan Buffered => throw new NotImplementedException();
+        public override TimeSpan Buffered
+        {
+            get
+            {
+                //ToDo: ME - ???
+                if (_player == null) return TimeSpan.Zero;
+                return
+                    TimeSpan.FromMilliseconds(_player.PlaybackSession.BufferingProgress *
+                                              _player.PlaybackSession.NaturalDuration.TotalMilliseconds);
+            }
+        }
 
-        public override float Speed { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public override RepeatMode RepeatMode { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public override ShuffleMode ShuffleMode { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public override float Speed { get => (float)_player.PlaybackSession.PlaybackRate; set => _player.PlaybackSession.PlaybackRate = value; }
+
+        ////ToDo: RepeatMode
+        //public override RepeatMode RepeatMode { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        ////ToDo: ShuffleMode
+        //public override ShuffleMode ShuffleMode { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public override RepeatMode RepeatMode { get; set; } = RepeatMode.Off;
+
+        //public override RepeatMode RepeatMode
+        //{
+        //    get
+        //    {
+        //        return MediaPlayer.RepeatMode;
+        //    }
+        //    set
+        //    {
+        //        MediaPlayer.RepeatMode = value;
+        //    }
+        //}
+
+        public override ShuffleMode ShuffleMode
+        {
+            get
+            {
+                return MediaQueue.ShuffleMode;
+            }
+            set
+            {
+                MediaQueue.ShuffleMode = value;
+            }
+        }
 
         // - - -  - - - 
 
@@ -71,12 +129,7 @@ namespace MediaManager
         {
             _player = new MediaPlayer();
             _MediaExtractor = new Platforms.Uap.UapMediaExtractor();
-        }
 
-        // - - -  - - - 
-
-        public override void Init()
-        {
             //ToDo: ME - reorg
 
             _player.CurrentStateChanged += (MediaPlayer sender, object args) =>
@@ -85,12 +138,8 @@ namespace MediaManager
                 this.OnStateChanged(this, new StateChangedEventArgs(GetMediaPlayerState()));
             };
 
-            //ToDo: ME - todo
-            //event PlayingChangedEventHandler PlayingChanged;
-            //event BufferingChangedEventHandler BufferingChanged;
-
-            //event MediaItemFinishedEventHandler MediaItemFinished;
-            //event MediaItemChangedEventHandler MediaItemChanged;
+            //ToDo: event BufferingChangedEventHandler BufferingChanged;
+            //ToDo: event MediaItemFinishedEventHandler MediaItemFinished;
 
             _player.SourceChanged += (MediaPlayer sender, object args) =>
             {
@@ -103,7 +152,12 @@ namespace MediaManager
                 _player.PlaybackSession.Position = TimeSpan.Zero;
                 this.OnMediaItemFailed(this, new MediaItemFailedEventArgs(this.MediaQueue.Current, args.ExtendedErrorCode, args.ErrorMessage));
             };
+        }
 
+        // - - -  - - - 
+
+        public override void Init()
+        {
             IsInitialized = true;
         }
 
@@ -122,6 +176,7 @@ namespace MediaManager
             return Task.CompletedTask;
         }
 
+        //ToDo: Play(IMediaItem mediaItem)
         public override Task Play(IMediaItem mediaItem)
         {
             throw new NotImplementedException();
@@ -174,6 +229,8 @@ namespace MediaManager
             throw new NotImplementedException();
         }
 
+        // - - -  - - - 
+
         public override Task<IMediaItem> Play(FileInfo file)
         {
             throw new NotImplementedException();
@@ -184,6 +241,8 @@ namespace MediaManager
             throw new NotImplementedException();
         }
 
+        // - - -  - - - 
+
         public override Task Play()
         {
             _player.PlaybackSession.PlaybackRate = 1;
@@ -191,31 +250,21 @@ namespace MediaManager
             return Task.CompletedTask;
         }
 
-        public override Task<bool> PlayNext()
-        {
-            throw new NotImplementedException();
-        }
+        //public override Task<bool> PlayNext()
+        //{
+        //    throw new NotImplementedException();
+        //}
 
-        public override Task<bool> PlayPrevious()
-        {
-            throw new NotImplementedException();
-        }
+        //public override Task<bool> PlayPrevious()
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public override async Task SeekTo(TimeSpan position)
         {
             _player.PlaybackSession.Position = position;
             await Task.CompletedTask;
         }
-
-        //public override Task StepBackward()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public override Task StepForward()
-        //{
-        //    throw new NotImplementedException();
-        //}
 
         public override Task Stop()
         {
@@ -227,5 +276,19 @@ namespace MediaManager
 
             return Task.CompletedTask;
         }
+
+        // - - -  - - - 
+
+        public override Task<bool> PlayPrevious()
+        {
+            return base.PlayPrevious();
+        }
+
+        public override Task<bool> PlayNext()
+        {
+            return base.PlayNext();
+        }
+
+        // - - -  - - - 
     }
 }
